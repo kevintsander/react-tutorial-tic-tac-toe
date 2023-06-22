@@ -104,8 +104,13 @@ function HistoryPanel({
     let content;
     if (move === currentMove) {
       content = <span>{`Current move #${move}`}</span>;
+    } else if (move === 0) {
+      content = (
+        <button onClick={() => onJumpTo(move)}>Go to game start</button>
+      );
     } else {
-      const description = `Go to ${move > 0 ? `move #${move}` : "game start"}`;
+      const change = calculateHistoryChange(history[move], history[move - 1]);
+      const description = `Go to move # ${move} (${change.value} in [${change.row}, ${change.col}])`;
       content = <button onClick={() => onJumpTo(move)}>{description}</button>;
     }
 
@@ -126,6 +131,22 @@ function HistoryPanel({
       )}
     </div>
   );
+}
+
+function getRowColFromIndex(index) {
+  const row = Math.floor(index / 3);
+  const col = index % 3;
+  return { row: row, col: col };
+}
+
+function calculateHistoryChange(move, previousMove) {
+  let change = {};
+  move.forEach((value, i) => {
+    if (value != null && previousMove[i] == null) {
+      change = { value: value, ...getRowColFromIndex(i) };
+    }
+  });
+  return change;
 }
 
 export default function Game() {
