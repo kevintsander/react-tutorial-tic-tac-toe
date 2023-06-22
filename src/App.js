@@ -10,6 +10,7 @@ function Square({ value, onSquareClick }) {
 
 function Board({ xIsNext, squares, onPlay }) {
   function handleClick(i) {
+    console.log(i);
     if (squares[i] || calculateWinner(squares)) {
       return;
     } //return if square already has a value
@@ -32,24 +33,42 @@ function Board({ xIsNext, squares, onPlay }) {
     status = "Next player: " + (xIsNext ? "X" : "O");
   }
 
+  function renderSquare(index) {
+    return (
+      <Square
+        key={index}
+        value={squares[index]}
+        onSquareClick={() => handleClick(index)}
+      />
+    );
+  }
+
+  function renderRow(row) {
+    let index = row * 3;
+    let rowContent = [];
+    for (let col = 0; col < 3; col++) {
+      rowContent.push(renderSquare(index));
+      index++;
+    }
+    return rowContent;
+  }
+
+  function renderBoard() {
+    const rows = [];
+    for (let row = 0; row < 3; row++) {
+      rows.push(
+        <div key={row} className="board-row">
+          {renderRow(row)}
+        </div>
+      );
+    }
+    return rows;
+  }
+
   return (
     <>
       <div className="status">{status}</div>
-      <div className="board-row">
-        <Square value={squares[0]} onSquareClick={() => handleClick(0)} />
-        <Square value={squares[1]} onSquareClick={() => handleClick(1)} />
-        <Square value={squares[2]} onSquareClick={() => handleClick(2)} />
-      </div>
-      <div className="board-row">
-        <Square value={squares[3]} onSquareClick={() => handleClick(3)} />
-        <Square value={squares[4]} onSquareClick={() => handleClick(4)} />
-        <Square value={squares[5]} onSquareClick={() => handleClick(5)} />
-      </div>
-      <div className="board-row">
-        <Square value={squares[6]} onSquareClick={() => handleClick(6)} />
-        <Square value={squares[7]} onSquareClick={() => handleClick(7)} />
-        <Square value={squares[8]} onSquareClick={() => handleClick(8)} />
-      </div>
+      {renderBoard()}
     </>
   );
 }
@@ -74,9 +93,45 @@ function calculateWinner(squares) {
   return null;
 }
 
+function HistoryPanel({
+  currentMove,
+  sortDesc,
+  history,
+  onChangeSort,
+  onJumpTo,
+}) {
+  const moves = history.map((squares, move) => {
+    let content;
+    if (move === currentMove) {
+      content = <span>{`Current move #${move}`}</span>;
+    } else {
+      const description = `Go to ${move > 0 ? `move #${move}` : "game start"}`;
+      content = <button onClick={() => onJumpTo(move)}>{description}</button>;
+    }
+
+    return <li key={move}>{content}</li>;
+  });
+
+  const sortDescription = `Sort ${sortDesc ? "ASC" : "DESC"}`;
+
+  return (
+    <div className="game-info">
+      <button onClick={onChangeSort}>{sortDescription}</button>
+      {sortDesc ? (
+        <ol start="0">{moves}</ol>
+      ) : (
+        <ol start={moves.length - 1} reversed>
+          {moves.reverse()}
+        </ol>
+      )}
+    </div>
+  );
+}
+
 export default function Game() {
   const [history, setHistory] = useState([Array(9).fill(null)]);
   const [currentMove, setCurrentMove] = useState(0);
+  const [sortDesc, setSortDesc] = useState(true);
   const xIsNext = currentMove % 2 === 0;
   const currentSquares = history[currentMove];
 
@@ -90,26 +145,22 @@ export default function Game() {
     setCurrentMove(nextMove);
   }
 
-  const moves = history.map((squares, move) => {
-    let content;
-    if (move === currentMove) {
-      content = <span>{`Current move #${move}`}</span>;
-    } else {
-      const description = `Go to ${move > 0 ? `move #${move}` : "game start"}`;
-      content = <button onClick={() => jumpTo(move)}>{description}</button>;
-    }
-
-    return <li key={move}>{content}</li>;
-  });
+  function changeSort() {
+    setSortDesc(!sortDesc);
+  }
 
   return (
     <div className="game">
       <div className="game-board">
         <Board xIsNext={xIsNext} squares={currentSquares} onPlay={handlePlay} />
       </div>
-      <div className="game-info">
-        <ol>{moves}</ol>
-      </div>
+      <HistoryPanel
+        currentMove={currentMove}
+        sortDesc={sortDesc}
+        history={history}
+        onChangeSort={changeSort}
+        onJumpTo={jumpTo}
+      />
     </div>
   );
 }
